@@ -29,7 +29,7 @@ def infer(image):
 
 
 def from_capture():
-    img = Image.open('/tmp/capture.png')
+    img = Image.open('/tmp/daikon-capture.png')
     return infer(img)
 
 
