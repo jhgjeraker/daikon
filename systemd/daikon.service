@@ -1,0 +1,12 @@
+[Unit]
+Description=Daikon Service
+After=network.target daikon.socket
+Requires=daikon.socket
+
+[Service]
+Type=simple
+ExecStart=/bin/sh -c '/usr/bin/daikon-ocr-service'
+TimeoutStopSec=5
+
+[Install]
+WantedBy=multi-user.target

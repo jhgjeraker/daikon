@@ -1,0 +1,9 @@
+[Unit]
+Description=Daikon Socket
+PartOf=daikon.service
+
+[Socket]
+ListenStream=127.0.0.1:9929
+
+[Install]
+WantedBy=sockets.target
