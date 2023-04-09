@@ -117,4 +117,8 @@ else
     echo 'Usage: >> jisho|llm ocr|message'
 fi
 
+echo ""
+echo "--------------------"
+cat $tmp_text
+echo ""
 echo "$res"
