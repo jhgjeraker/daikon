@@ -1,21 +1,29 @@
 # daikon
 Reading assistant for JP manga combining OCR, LLMs, and Jisho.
 
-## Install
-1. Make sure you have the `virtualenv` Python package.
+## Motivation
+TBA
 
+## Setup
+1. Install the `virtualenv` Python package.
 ```
 pip install virtualenv
 ```
 
-2. Verify that `install.sh` does nothing shady, the run it.
+2. The OCR functionality relies on a screenshot utility to capture the text.
+  - If you're on X11, install `maim`.
+  - If you're on Wayland, install `flameshot`.
 
+## Install
+1. Verify that `install.sh` does nothing shady, then run it.
 ```
 ./install.sh
 ```
 
-3. Enable the OCR service and socket.
-
+2. Enable the OCR service and socket.
 ```
 systemctl enable --now daikon.socket
 ```
+
+## Usage
+TBA
