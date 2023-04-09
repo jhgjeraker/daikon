@@ -1,14 +1,41 @@
 #!/bin/bash
 
+tmp_text='/tmp/daikon'
+tmp_capture='/tmp/daikon-capture.png'
+model="gpt-3.5-turbo"
+
+# Delete existing capture is if exists.
+# This is mainly to deal with `flameshot` not overwriting
+# but rather appending indices to new captures if it already exists.
+if [[ -f "$tmp_capture" ]]; then
+    rm -f "$tmp_capture"
+fi
+
+capture_x11() {
+    maim -s --hidecursor $tmp_capture
+}
+
+capture_wayland() {
+    flameshot gui --path $tmp_capture
+}
+
+# Determine session type as we need different
+# screenshot tools for X11 and Wayland.
+if [ "$XDG_SESSION_TYPE" = "x11" ]; then
+    capture=capture_x11
+elif [ "$XDG_SESSION_TYPE" = "wayland" ]; then
+    capture=capture_wayland
+else
+    echo "Could not determine your display server"
+    exit 1
+fi
+
 # Get the absolute path of the script.
 SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 
 # Activate Python environment.
 source "$SCRIPT_DIR/venv/bin/activate"
-
-tmpfile='/tmp/daikon'
-model="gpt-3.5-turbo"
 
 # Check if there is at least one argument
 if [ $# -lt 1 ]; then
@@ -25,13 +52,13 @@ shift
 
 # Combine all remaining arguments into a single string
 message="$*"
-echo "$message" > $tmpfile
+echo "$message" > $tmp_text
 
 # Define the model functions
 completion() {
     openai api completions.create \
         --model text-davinci-003 \
-        --prompt "$(cat $tmpfile)" \
+        --prompt "$(cat $tmp_text)" \
         --temperature 0.7 \
         --max-tokens 256 \
         --stream
@@ -41,14 +68,14 @@ completion() {
 chat_completion() {
     openai api chat_completions.create \
         --model gpt-3.5-turbo \
-        --message user "$(cat $tmpfile)" \
+        --message user "$(cat $tmp_text)" \
         --temperature 0.7 \
         --max-tokens 256
     echo ""
 }
 
 jisho_api() {
-    jisho search word "$(cat $tmpfile)"
+    jisho search word "$(cat $tmp_text)"
 }
 
 # Define an associative array mapping model names to their functions
@@ -76,10 +103,10 @@ if ! is_valid_model "$model"; then
 fi
 
 if [[ "$message" == "ocr" ]]; then
-    maim -s --hidecursor /tmp/capture.png
+    $capture
     ocr_text=$(echo "<args>" | nc 127.0.0.1 9929)
-    echo "$ocr_text" > $tmpfile
-    nvim $tmpfile
+    echo "$ocr_text" > $tmp_text
+    nvim $tmp_text
 fi
 
 if [[ "$command" == "jisho" ]]; then
