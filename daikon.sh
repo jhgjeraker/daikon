@@ -11,24 +11,9 @@ if [[ -f "$tmp_capture" ]]; then
     rm -f "$tmp_capture"
 fi
 
-capture_x11() {
-    maim -s --hidecursor $tmp_capture
-}
-
-capture_wayland() {
+capture() {
     flameshot gui --path $tmp_capture
 }
-
-# Determine session type as we need different
-# screenshot tools for X11 and Wayland.
-if [ "$XDG_SESSION_TYPE" = "x11" ]; then
-    capture=capture_x11
-elif [ "$XDG_SESSION_TYPE" = "wayland" ]; then
-    capture=capture_wayland
-else
-    echo "Could not determine your display server"
-    exit 1
-fi
 
 # Get the absolute path of the script.
 SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
@@ -103,7 +88,7 @@ if ! is_valid_model "$model"; then
 fi
 
 if [[ "$message" == "ocr" ]]; then
-    $capture
+    capture
     ocr_text=$(echo "<args>" | nc 127.0.0.1 9929)
     echo "$ocr_text" > $tmp_text
     nvim $tmp_text
