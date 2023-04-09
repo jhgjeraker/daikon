@@ -107,6 +107,11 @@ if [[ "$message" == "ocr" ]]; then
     ocr_text=$(echo "<args>" | nc 127.0.0.1 9929)
     echo "$ocr_text" > $tmp_text
     nvim $tmp_text
+    # Exit if empty file after edit.
+    if [[ $(cat $tmp_text | wc -l) -le 0 ]]; then
+        echo "No OCR found. Exiting..."
+        exit 1
+    fi
 fi
 
 if [[ "$command" == "jisho" ]]; then
