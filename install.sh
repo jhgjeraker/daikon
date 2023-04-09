@@ -3,7 +3,7 @@
 # Create virtual Python environment.
 python -m virtualenv --clear venv
 source venv/bin/activate
-pip install --upgrade pip pillow fugashi sentencepiece unidic_lite jaconv transformers torch openai jisho_api
+pip install --upgrade pip -r requirements.txt
 
 # Create a symlink in path to the OCR service startup script.
 service_symlink=/usr/bin/daikon-ocr-service
