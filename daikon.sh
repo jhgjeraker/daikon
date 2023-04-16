@@ -1,114 +1,53 @@
 #!/bin/bash
 
-tmp_text='/tmp/daikon'
 tmp_capture='/tmp/daikon-capture.png'
-model="gpt-3.5-turbo"
+no_clipboard=false
+delay=0
 
-# Delete existing capture is if exists.
+function usage() {
+  echo "$0 (-d | --delay <INT>) (--no-clipboard)"
+}
+
+while (( "$#" )); do
+  case "$1" in
+    -d|--delay)
+      if [ -n "$2" ] && [ "$2" -eq "$2" ] 2>/dev/null; then
+        delay=$2
+        shift 2
+      else
+        echo "Error: Invalid value for --delay/-d option"
+        exit 1
+      fi
+      ;;
+    --no-clipboard)
+      no_clipboard=true
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Error: Invalid option $1"
+      exit 1
+      ;;
+  esac
+done
+
+# Delete existing capture before taking a new one.
 # This is mainly to deal with `flameshot` not overwriting
-# but rather appending indices to new captures if it already exists.
+# but rather appending indices to new captures if one is already present.
 if [[ -f "$tmp_capture" ]]; then
     rm -f "$tmp_capture"
 fi
+flameshot gui --path $tmp_capture -d $((delay * 1000))
 
-capture() {
-    flameshot gui --path $tmp_capture
-}
+# Trigger the OCR service that runs on the specified port.
+# The service will use the most recent capture in $tmp_capture.
+ocr_text=$(echo "<args>" | nc 127.0.0.1 9929)
 
-# Get the absolute path of the script.
-SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
-SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
-
-# Activate Python environment.
-source "$SCRIPT_DIR/venv/bin/activate"
-
-# Check if there is at least one argument
-if [ $# -lt 1 ]; then
-    echo "Error: At least one argument is required"
-    echo "Usage: $0 command [some message with spaces ...]"
-    exit 1
-fi
-
-# Get the required command argument
-command="$1"
-
-# Remove the first argument from the argument list
-shift
-
-# Combine all remaining arguments into a single string
-message="$*"
-echo "$message" > $tmp_text
-
-# Define the model functions
-completion() {
-    openai api completions.create \
-        --model text-davinci-003 \
-        --prompt "$(cat $tmp_text)" \
-        --temperature 0.7 \
-        --max-tokens 256 \
-        --stream
-    echo ""
-}
-
-chat_completion() {
-    openai api chat_completions.create \
-        --model gpt-3.5-turbo \
-        --message user "$(cat $tmp_text)" \
-        --temperature 0.7 \
-        --max-tokens 256
-    echo ""
-}
-
-jisho_api() {
-    jisho search word "$(cat $tmp_text)"
-}
-
-# Define an associative array mapping model names to their functions
-declare -A model_map
-model_map=( ["gpt-3.5-turbo"]=chat_completion ["text-davinci-003"]=completion )
-
-# Get the list of valid models from the keys of the associative array
-valid_models=( "${!model_map[@]}" )
-
-# Function to check if the provided model is valid
-is_valid_model() {
-    local input_model="$1"
-    for valid_model in "${valid_models[@]}"; do
-        if [[ "$input_model" == "$valid_model" ]]; then
-            return 0
-        fi
-    done
-    return 1
-}
-
-if ! is_valid_model "$model"; then
-    echo "Invalid model: $model"
-    echo "Valid models: ${valid_models[*]}"
-    exit 1
-fi
-
-if [[ "$message" == "ocr" ]]; then
-    capture
-    ocr_text=$(echo "<args>" | nc 127.0.0.1 9929)
-    echo "$ocr_text" > $tmp_text
-    nvim $tmp_text
-    # Exit if empty file after edit.
-    if [[ $(cat $tmp_text | wc -l) -le 0 ]]; then
-        echo "No OCR found. Exiting..."
-        exit 1
-    fi
-fi
-
-if [[ "$command" == "jisho" ]]; then
-    res=$(jisho_api)
-elif [[ "$command" == "llm" ]]; then
-    res=$(${model_map["$model"]})
+if $no_clipboard; then
+    echo "$ocr_text"
 else
-    echo 'Usage: >> jisho|llm ocr|message'
+    wl-copy "$ocr_text"
 fi
-
-echo ""
-echo "--------------------"
-cat $tmp_text
-echo ""
-echo "$res"
