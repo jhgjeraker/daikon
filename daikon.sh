@@ -40,7 +40,7 @@ done
 if [[ -f "$tmp_capture" ]]; then
     rm -f "$tmp_capture"
 fi
-flameshot gui --path $tmp_capture -d $((delay * 1000))
+flameshot gui --path $tmp_capture -d $((delay * 1000)) --accept-on-select
 
 # Trigger the OCR service that runs on the specified port.
 # The service will use the most recent capture in $tmp_capture.
