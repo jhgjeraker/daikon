@@ -1,11 +1,11 @@
 #!/bin/bash
 
 tmp_capture='/tmp/daikon-capture.png'
-no_clipboard=false
+clipboard=false
 delay=0
 
 function usage() {
-  echo "$0 (-d | --delay <INT>) (--no-clipboard)"
+  echo "$0 (-d | --delay <INT>) (--clipboard)"
 }
 
 while (( "$#" )); do
@@ -19,8 +19,8 @@ while (( "$#" )); do
         exit 1
       fi
       ;;
-    --no-clipboard)
-      no_clipboard=true
+    --clipboard)
+      clipboard=true
       shift
       ;;
     -h|--help)
@@ -40,14 +40,14 @@ done
 if [[ -f "$tmp_capture" ]]; then
     rm -f "$tmp_capture"
 fi
-flameshot gui --path $tmp_capture -d $((delay * 1000)) --accept-on-select
+flameshot gui --path $tmp_capture -d $((delay * 1000)) --accept-on-select > /dev/null 2>&1
 
 # Trigger the OCR service that runs on the specified port.
 # The service will use the most recent capture in $tmp_capture.
 ocr_text=$(echo "<args>" | nc 127.0.0.1 9929)
 
-if $no_clipboard; then
-    echo "$ocr_text"
-else
+if $clipboard; then
     wl-copy "$ocr_text"
+else
+    echo "$ocr_text"
 fi
