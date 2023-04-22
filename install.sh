@@ -1,5 +1,17 @@
 #!/bin/bash
 
+# Install distro packages required for a quick setup.
+distro=$(cat /etc/os-release | grep -i ID= | grep -P -o '(?<==).*$' | head -1)
+if [[ "$distro" =~ ^(fedora)$ ]]; then
+    sudo dnf install $(cat packages/fedora)
+else
+    echo "No automation for \"$distro\"."
+    exit 1
+fi
+
+# Install virtualenv to system Python.
+pip install virtualenv
+
 # Create virtual Python environment.
 python -m virtualenv --clear venv
 source venv/bin/activate
