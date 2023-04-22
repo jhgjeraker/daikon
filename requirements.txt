@@ -4,3 +4,4 @@ unidic_lite
 jaconv
 transformers
 torch
+pillow
