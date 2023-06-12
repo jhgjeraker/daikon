@@ -3,6 +3,7 @@
 tmp_capture='/tmp/daikon-capture.png'
 clipboard=false
 delay=0
+session=$XDG_SESSION_TYPE
 
 function usage() {
   echo "$0 (-d | --delay <INT>) (--clipboard)"
@@ -47,7 +48,14 @@ flameshot gui --path $tmp_capture -d $((delay * 1000)) --accept-on-select > /dev
 ocr_text=$(echo "<args>" | nc 127.0.0.1 9929)
 
 if $clipboard; then
-    wl-copy "$ocr_text"
+    if [[ "$session" == "x11" ]]; then
+        echo "$ocr_text" | xclip -sel clip
+    elif [[ "$session" == "wayland" ]]; then
+        wl-copy "$ocr_text"
+    else
+        echo "Error: Unsupported session type $session"
+        exit 1
+    fi
 else
     echo "$ocr_text"
 fi
