@@ -2,7 +2,8 @@ import socket
 import os
 
 from PIL import Image
-from transformers import AutoFeatureExtractor, AutoTokenizer, VisionEncoderDecoderModel
+from transformers import AutoFeatureExtractor, AutoTokenizer, \
+    VisionEncoderDecoderModel
 import re
 import jaconv
 
@@ -11,13 +12,15 @@ model_path = '../Japanese_OCR/model/'
 image_processor = AutoFeatureExtractor.from_pretrained(model_path)
 tokenizer = AutoTokenizer.from_pretrained(model_path)
 model = VisionEncoderDecoderModel.from_pretrained(model_path)
-            
+
+
 def post_process(text):
     text = ''.join(text.split())
     text = text.replace('…', '...')
     text = re.sub('[・.]{2,}', lambda x: (x.end() - x.start()) * '.', text)
     text = jaconv.h2z(text, ascii=True, digit=True)
     return text
+
 
 def infer(image):
     image = image.convert('L').convert('RGB')
@@ -35,25 +38,28 @@ def from_capture():
 
 def handle_request(conn, addr, input_data):
     res = f'{from_capture()}'
-    # res = 'hello'
     conn.sendall(res.encode() + b'\n')
 
 
 def main():
-    # Get the listening socket information from systemd.
-    LISTEN_FDS = int(os.environ.get("LISTEN_FDS", 0))
-    if LISTEN_FDS != 1:
-        raise RuntimeError("Expected exactly one socket from systemd")
+    # Create a listening socket
+    listen_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    # Create a socket from the file descriptor provided by systemd
-    listen_sock = socket.fromfd(3, socket.AF_INET, socket.SOCK_STREAM)
+    # Set options
+    listen_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+    # Bind and listen
+    listen_sock.bind(("localhost", 9929))
+    listen_sock.listen(1)
 
     # Accept connections and handle requests
+    print('listening...')
     while True:
         conn, addr = listen_sock.accept()
         input_data = conn.recv(1024).decode('utf-8').strip()
         handle_request(conn, addr, input_data)
         conn.close()
+
 
 if __name__ == "__main__":
     main()
